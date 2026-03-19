@@ -1094,8 +1094,8 @@ function PerformView({
         else startPlay();
       }
       if (e.key === "Escape" && !document.fullscreenElement) onExit();
-      if (e.key === "ArrowUp") setSpeed((s) => Math.min(20, s + 1));
-      if (e.key === "ArrowDown") setSpeed((s) => Math.max(0, s - 1));
+      if (e.key === "ArrowUp") { e.preventDefault(); setSpeed((s) => Math.min(20, s + 1)); }
+      if (e.key === "ArrowDown") { e.preventDefault(); setSpeed((s) => Math.max(0, s - 1)); }
       if (e.key === "ArrowRight") { e.preventDefault(); skipForward(); }
       if (e.key === "ArrowLeft") { e.preventDefault(); skipBackward(); }
       if (e.key === "PageDown") skipForward();
