@@ -338,6 +338,9 @@ export default function SongTeleprompter() {
             onImportTxt={importTxtFile}
             onImportDocx={importDocxFile}
             onAddAllToSetlist={addAllToSetlist}
+            onDropFiles={(newSongs) => {
+              newSongs.forEach((s) => setSongs((prev) => [...prev, { id: uid(), ...s }]));
+            }}
           />
         )}
         {view === "setlist" && (
@@ -378,10 +381,59 @@ function LibraryView({
   onPlay,
   onImportTxt,
   onImportDocx,
+  onDropFiles,
 }) {
   const txtRef = useRef(null);
   const docxRef = useRef(null);
   const [search, setSearch] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const dragCounter = useRef(0);
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    dragCounter.current++;
+    if (e.dataTransfer.types.includes("Files")) setIsDragOver(true);
+  };
+  const handleDragLeave = () => {
+    dragCounter.current--;
+    if (dragCounter.current === 0) setIsDragOver(false);
+  };
+  const handleDragOver = (e) => e.preventDefault();
+  const handleDrop = (e) => {
+    e.preventDefault();
+    dragCounter.current = 0;
+    setIsDragOver(false);
+    const files = Array.from(e.dataTransfer.files);
+    const txtFiles = files.filter((f) => /\.(txt|text)$/i.test(f.name));
+    const docxFiles = files.filter((f) => /\.docx$/i.test(f.name));
+    // TXT — direkt in Bibliothek
+    txtFiles.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const title = file.name.replace(/\.(txt|text)$/i, "");
+        onDropFiles([{ title, text: ev.target.result, artist: "" }]);
+      };
+      reader.readAsText(file);
+    });
+    // DOCX — via mammoth
+    if (docxFiles.length > 0) {
+      import("mammoth").then((mod) => {
+        const mammoth = mod.default || mod;
+        docxFiles.forEach((file) => {
+          const reader = new FileReader();
+          reader.onload = async (ev) => {
+            try {
+              const result = await mammoth.extractRawText({ arrayBuffer: ev.target.result });
+              const title = file.name.replace(/\.docx$/i, "");
+              onDropFiles([{ title, text: result.value.trim(), artist: "" }]);
+            } catch { /* ignore */ }
+          };
+          reader.readAsArrayBuffer(file);
+        });
+      }).catch(() => {});
+    }
+  };
 
   const filtered = search.trim()
     ? songs.filter((s) =>
@@ -391,7 +443,25 @@ function LibraryView({
     : songs;
 
   return (
-    <div style={styles.viewContainer}>
+    <div
+      style={{ ...styles.viewContainer, position: "relative" }}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {/* Drop overlay */}
+      {isDragOver && (
+        <div style={styles.dropOverlay}>
+          <div style={styles.dropOverlayInner}>
+            <Icon d={icons.upload} size={48} color="#f59e0b" />
+            <p style={{ color: "#f59e0b", fontSize: 20, fontWeight: 700, margin: 0 }}>
+              Dateien hier ablegen
+            </p>
+            <p style={{ color: "#9ca3af", fontSize: 14, margin: 0 }}>TXT und DOCX werden unterstützt</p>
+          </div>
+        </div>
+      )}
       <div style={styles.toolbar}>
         <button className="btn-primary" style={styles.btnPrimary} onClick={onAdd}>
           <Icon d={icons.plus} size={16} /> Neuer Song
@@ -486,10 +556,29 @@ function LibraryView({
                     <Icon d={icons.list} size={18} color="#f59e0b" />
                   </button>
                 )}
-                <button className="btn-icon" style={styles.btnIcon} title="Löschen"
-                  onClick={() => { if (confirm(`"${song.title}" wirklich löschen?`)) onDelete(song.id); }}>
-                  <Icon d={icons.trash} size={18} color="#ef4444" />
-                </button>
+                {confirmDeleteId === song.id ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <button
+                      className="btn-danger"
+                      style={{ ...styles.btnDanger, padding: "4px 10px", fontSize: 12 }}
+                      onClick={() => { onDelete(song.id); setConfirmDeleteId(null); }}
+                    >
+                      Löschen
+                    </button>
+                    <button
+                      className="btn-icon"
+                      style={styles.btnIcon}
+                      onClick={() => setConfirmDeleteId(null)}
+                    >
+                      <Icon d={icons.x} size={15} color="#9ca3af" />
+                    </button>
+                  </div>
+                ) : (
+                  <button className="btn-icon" style={styles.btnIcon} title="Löschen"
+                    onClick={() => setConfirmDeleteId(song.id)}>
+                    <Icon d={icons.trash} size={18} color="#ef4444" />
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -517,6 +606,7 @@ function SetlistView({
   const fileRef = useRef(null);
   const [dragIdx, setDragIdx] = useState(null);
   const [dragOverIdx, setDragOverIdx] = useState(null);
+  const [confirmClear, setConfirmClear] = useState(false);
   const setlistSongs = setlist.map((id) => songs.find((s) => s.id === id)).filter(Boolean);
 
   const handleDrop = (toIdx) => {
@@ -549,10 +639,24 @@ function SetlistView({
           onChange={onImport}
         />
         {setlist.length > 0 && (
-          <button className="btn-danger" style={styles.btnDanger}
-            onClick={() => { if (confirm("Setlist leeren?")) onClear(); }}>
-            <Icon d={icons.trash} size={16} /> Leeren
-          </button>
+          confirmClear ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ color: "#fca5a5", fontSize: 13 }}>Wirklich leeren?</span>
+              <button className="btn-danger" style={styles.btnDanger}
+                onClick={() => { onClear(); setConfirmClear(false); }}>
+                Ja, leeren
+              </button>
+              <button className="btn-secondary" style={styles.btnSecondary}
+                onClick={() => setConfirmClear(false)}>
+                Abbrechen
+              </button>
+            </div>
+          ) : (
+            <button className="btn-danger" style={styles.btnDanger}
+              onClick={() => setConfirmClear(true)}>
+              <Icon d={icons.trash} size={16} /> Leeren
+            </button>
+          )
         )}
       </div>
 
@@ -1118,6 +1222,25 @@ const styles = {
     padding: "24px 16px",
   },
   viewContainer: {},
+  dropOverlay: {
+    position: "absolute",
+    inset: 0,
+    background: "rgba(15,15,30,0.92)",
+    border: "2px dashed #f59e0b",
+    borderRadius: 12,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 50,
+    backdropFilter: "blur(4px)",
+  },
+  dropOverlayInner: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 12,
+    padding: 40,
+  },
   searchRow: {
     display: "flex",
     gap: 8,
