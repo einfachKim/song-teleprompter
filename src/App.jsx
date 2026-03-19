@@ -123,6 +123,16 @@ export default function SongTeleprompter() {
     });
   };
 
+  const moveSetlistItem = (fromIdx, toIdx) => {
+    if (fromIdx === toIdx) return;
+    setSetlist((prev) => {
+      const arr = [...prev];
+      const [moved] = arr.splice(fromIdx, 1);
+      arr.splice(toIdx, 0, moved);
+      return arr;
+    });
+  };
+
   // ─── Performance ───
   const startPerformance = (songId, fromSetlist = false) => {
     setActiveSongId(songId);
@@ -336,6 +346,7 @@ export default function SongTeleprompter() {
             songs={songs}
             onRemove={removeFromSetlist}
             onMove={moveInSetlist}
+            onMoveItem={moveSetlistItem}
             onPlay={(id) => startPerformance(id, true)}
             onPlayAll={() => {
               if (setlist.length > 0) {
@@ -496,6 +507,7 @@ function SetlistView({
   songs,
   onRemove,
   onMove,
+  onMoveItem,
   onPlay,
   onPlayAll,
   onExport,
@@ -503,7 +515,15 @@ function SetlistView({
   onClear,
 }) {
   const fileRef = useRef(null);
+  const [dragIdx, setDragIdx] = useState(null);
+  const [dragOverIdx, setDragOverIdx] = useState(null);
   const setlistSongs = setlist.map((id) => songs.find((s) => s.id === id)).filter(Boolean);
+
+  const handleDrop = (toIdx) => {
+    if (dragIdx !== null) onMoveItem(dragIdx, toIdx);
+    setDragIdx(null);
+    setDragOverIdx(null);
+  };
 
   return (
     <div style={styles.viewContainer}>
@@ -546,8 +566,21 @@ function SetlistView({
       ) : (
         <div style={styles.setlistContainer}>
           {setlistSongs.map((song, idx) => (
-            <div key={song.id} className="setlist-item" style={{ ...styles.setlistItem, borderLeft: `3px solid ${accentColor(song.id)}` }}>
-              <span style={styles.setlistNum}>{idx + 1}</span>
+            <div
+              key={song.id}
+              className={[
+                "setlist-item",
+                dragIdx === idx ? "dragging" : "",
+                dragOverIdx === idx && dragIdx !== idx ? "drag-over" : "",
+              ].join(" ")}
+              style={{ ...styles.setlistItem, borderLeft: `3px solid ${accentColor(song.id)}`, cursor: "grab" }}
+              draggable
+              onDragStart={() => setDragIdx(idx)}
+              onDragOver={(e) => { e.preventDefault(); setDragOverIdx(idx); }}
+              onDrop={() => handleDrop(idx)}
+              onDragEnd={() => { setDragIdx(null); setDragOverIdx(null); }}
+            >
+              <span style={{ ...styles.setlistNum, userSelect: "none" }}>{idx + 1}</span>
               <div style={styles.setlistInfo}>
                 <span style={styles.setlistSongTitle}>{song.title}</span>
                 {song.artist && <span style={styles.setlistArtist}>{song.artist}</span>}
