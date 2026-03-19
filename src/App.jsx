@@ -368,6 +368,14 @@ function LibraryView({
 }) {
   const txtRef = useRef(null);
   const docxRef = useRef(null);
+  const [search, setSearch] = useState("");
+
+  const filtered = search.trim()
+    ? songs.filter((s) =>
+        s.title.toLowerCase().includes(search.toLowerCase()) ||
+        (s.artist || "").toLowerCase().includes(search.toLowerCase())
+      )
+    : songs;
 
   return (
     <div style={styles.viewContainer}>
@@ -403,14 +411,36 @@ function LibraryView({
         />
       </div>
 
+      {songs.length > 0 && (
+        <div style={styles.searchRow}>
+          <input
+            className="search-input"
+            style={styles.searchInput}
+            placeholder="Songs durchsuchen…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {search && (
+            <button className="btn-icon" style={{ ...styles.btnIcon, flexShrink: 0 }} onClick={() => setSearch("")}>
+              <Icon d={icons.x} size={16} color="#9ca3af" />
+            </button>
+          )}
+        </div>
+      )}
+
       {songs.length === 0 ? (
         <div style={styles.empty}>
           <Icon d={icons.music} size={48} color="#4b5563" />
           <p style={styles.emptyText}>Noch keine Songs. Füge deinen ersten Song hinzu!</p>
         </div>
+      ) : filtered.length === 0 ? (
+        <div style={styles.empty}>
+          <Icon d={icons.x} size={36} color="#4b5563" />
+          <p style={styles.emptyText}>Kein Song gefunden für „{search}"</p>
+        </div>
       ) : (
         <div style={styles.songGrid}>
-          {songs.map((song) => (
+          {filtered.map((song) => (
             <div
               key={song.id}
               className="song-card"
@@ -1035,6 +1065,23 @@ const styles = {
     padding: "24px 16px",
   },
   viewContainer: {},
+  searchRow: {
+    display: "flex",
+    gap: 8,
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  searchInput: {
+    flex: 1,
+    padding: "10px 14px",
+    border: "1px solid #2a2a3a",
+    borderRadius: 8,
+    background: "rgba(255,255,255,0.05)",
+    color: "#f5f5f5",
+    fontSize: 14,
+    fontFamily: "inherit",
+    boxSizing: "border-box",
+  },
   toolbar: {
     display: "flex",
     gap: 8,
