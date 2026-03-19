@@ -341,6 +341,7 @@ export default function SongTeleprompter() {
             onDropFiles={(newSongs) => {
               newSongs.forEach((s) => setSongs((prev) => [...prev, { id: uid(), ...s }]));
             }}
+            onClearLibrary={() => { setSongs([]); setSetlist([]); }}
           />
         )}
         {view === "setlist" && (
@@ -382,11 +383,13 @@ function LibraryView({
   onImportTxt,
   onImportDocx,
   onDropFiles,
+  onClearLibrary,
 }) {
   const txtRef = useRef(null);
   const docxRef = useRef(null);
   const [search, setSearch] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [confirmClearLibrary, setConfirmClearLibrary] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const dragCounter = useRef(0);
 
@@ -476,6 +479,26 @@ function LibraryView({
           <button className="btn-secondary" style={styles.btnSecondary} onClick={onAddAllToSetlist}>
             <Icon d={icons.list} size={16} /> Alle zur Setlist
           </button>
+        )}
+        {songs.length > 0 && (
+          confirmClearLibrary ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ color: "#fca5a5", fontSize: 13 }}>Alle {songs.length} Songs löschen?</span>
+              <button className="btn-danger" style={styles.btnDanger}
+                onClick={() => { onClearLibrary(); setConfirmClearLibrary(false); }}>
+                Ja, löschen
+              </button>
+              <button className="btn-secondary" style={styles.btnSecondary}
+                onClick={() => setConfirmClearLibrary(false)}>
+                Abbrechen
+              </button>
+            </div>
+          ) : (
+            <button className="btn-danger" style={styles.btnDanger}
+              onClick={() => setConfirmClearLibrary(true)}>
+              <Icon d={icons.trash} size={16} /> Bibliothek leeren
+            </button>
+          )
         )}
         <input
           ref={txtRef}
