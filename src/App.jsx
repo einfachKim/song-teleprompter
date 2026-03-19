@@ -25,6 +25,55 @@ const accentColor = (id) => {
   return ACCENT_COLORS[n % ACCENT_COLORS.length];
 };
 
+// ─── Theme tokens ───
+const DARK_THEME = {
+  appBg: "linear-gradient(170deg, #0f0f0f 0%, #1a1a2e 50%, #0f0f0f 100%)",
+  headerBg: "rgba(15,15,20,0.85)",
+  headerBorder: "#2a2a3a",
+  surface: "rgba(255,255,255,0.04)",
+  border: "#2a2a3a",
+  text: "#e5e5e5",
+  textStrong: "#f5f5f5",
+  textMuted: "#9ca3af",
+  textFaint: "#6b7280",
+  inputBg: "rgba(255,255,255,0.06)",
+  inputBorder: "#2a2a3a",
+  btnSecBg: "rgba(255,255,255,0.05)",
+  btnSecBorder: "#3a3a4a",
+  btnSecText: "#d1d5db",
+  btnSmallBg: "rgba(255,255,255,0.06)",
+  accent: "#f59e0b",
+  accentDim: "#f59e0b22",
+  danger: "#fca5a5",
+  dangerBg: "rgba(127,29,29,0.2)",
+  dangerBorder: "#7f1d1d",
+  dropOverlayBg: "rgba(15,15,30,0.92)",
+};
+
+const LIGHT_THEME = {
+  appBg: "linear-gradient(170deg, #f5f0e8 0%, #ede8dc 50%, #f5f0e8 100%)",
+  headerBg: "rgba(245,240,232,0.95)",
+  headerBorder: "#d6cfc2",
+  surface: "rgba(0,0,0,0.04)",
+  border: "#d6cfc2",
+  text: "#2d2926",
+  textStrong: "#111",
+  textMuted: "#6b6560",
+  textFaint: "#9a948e",
+  inputBg: "rgba(0,0,0,0.04)",
+  inputBorder: "#c8c0b4",
+  btnSecBg: "rgba(0,0,0,0.04)",
+  btnSecBorder: "#c8c0b4",
+  btnSecText: "#3d3830",
+  btnSmallBg: "rgba(0,0,0,0.06)",
+  accent: "#b45309",
+  accentDim: "#b4530922",
+  danger: "#b91c1c",
+  dangerBg: "rgba(185,28,28,0.08)",
+  dangerBorder: "#fca5a5",
+  dropOverlayBg: "rgba(245,240,232,0.92)",
+};
+
 // ─── Icons (inline SVG paths) ───
 const Icon = ({ d, size = 20, color = "currentColor", ...props }) => (
   <svg
@@ -67,6 +116,7 @@ const icons = {
   rewind:   "M11 19V5l-7 7 7 7zM21 19V5l-7 7 7 7z",
   fastFwd:  "M13 5v14l7-7-7-7zM3 5v14l7-7-7-7z",
   docx:     "M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM14 2v6h6M16 13H8M16 17H8M10 9H8",
+  help:     "M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01",
 };
 
 // ═══════════════════════════════════════════
@@ -79,9 +129,13 @@ export default function SongTeleprompter() {
   const [activeSongId, setActiveSongId] = useState(null);
   const [editSong, setEditSong] = useState(null);
   const [setlistIndex, setSetlistIndex] = useState(0);
+  const [isDark, setIsDark] = useState(() => localStorage.getItem("teleprompter_theme") !== "light");
+  const [showHelp, setShowHelp] = useState(false);
+  const theme = isDark ? DARK_THEME : LIGHT_THEME;
 
   useEffect(() => { saveSongs(songs); }, [songs]);
   useEffect(() => { saveSetlist(setlist); }, [setlist]);
+  useEffect(() => { localStorage.setItem("teleprompter_theme", isDark ? "dark" : "light"); }, [isDark]);
 
   // ─── Song CRUD ───
   const addSong = (song) => {
@@ -280,6 +334,8 @@ export default function SongTeleprompter() {
     return (
       <EditView
         song={editSong}
+        theme={theme}
+        isDark={isDark}
         onSave={(song) => {
           if (song.id) updateSong(song.id, song);
           else addSong(song);
@@ -295,26 +351,35 @@ export default function SongTeleprompter() {
   }
 
   return (
-    <div style={styles.app}>
-      <header style={styles.header}>
+    <div style={{ ...styles.app, background: theme.appBg, color: theme.text }} data-theme={isDark ? "dark" : "light"}>
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} theme={theme} />}
+      <header style={{ ...styles.header, background: theme.headerBg, borderBottom: `1px solid ${theme.headerBorder}` }}>
         <div style={styles.headerLeft}>
-          <Icon d={icons.music} size={28} color="#f59e0b" />
-          <h1 style={styles.title}>Song Teleprompter</h1>
+          <Icon d={icons.music} size={28} color={theme.accent} />
+          <h1 style={{ ...styles.title, color: theme.accent }}>Song Teleprompter</h1>
         </div>
         <div style={styles.tabs}>
           <button
             className="tab-btn"
-            style={{ ...styles.tab, ...(view === "library" ? styles.tabActive : {}) }}
+            style={{ ...styles.tab, color: theme.textMuted, ...(view === "library" ? { background: theme.accentDim, color: theme.accent } : {}) }}
             onClick={() => setView("library")}
           >
             Bibliothek ({songs.length})
           </button>
           <button
             className="tab-btn"
-            style={{ ...styles.tab, ...(view === "setlist" ? styles.tabActive : {}) }}
+            style={{ ...styles.tab, color: theme.textMuted, ...(view === "setlist" ? { background: theme.accentDim, color: theme.accent } : {}) }}
             onClick={() => setView("setlist")}
           >
             Setlist ({setlist.length})
+          </button>
+        </div>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <button className="btn-icon" style={{ ...styles.btnIcon, border: `1px solid ${theme.border}` }} onClick={() => setIsDark((d) => !d)} title="Design wechseln">
+            <Icon d={isDark ? icons.sun : icons.moon} size={18} color={theme.textMuted} />
+          </button>
+          <button className="btn-icon" style={{ ...styles.btnIcon, border: `1px solid ${theme.border}` }} onClick={() => setShowHelp(true)} title="Hilfe">
+            <Icon d={icons.help} size={18} color={theme.textMuted} />
           </button>
         </div>
       </header>
@@ -322,6 +387,7 @@ export default function SongTeleprompter() {
       <main style={styles.main}>
         {view === "library" && (
           <LibraryView
+            theme={theme}
             songs={songs}
             setlist={setlist}
             onAdd={() => {
@@ -346,6 +412,7 @@ export default function SongTeleprompter() {
         )}
         {view === "setlist" && (
           <SetlistView
+            theme={theme}
             setlist={setlist}
             songs={songs}
             onRemove={removeFromSetlist}
@@ -372,6 +439,7 @@ export default function SongTeleprompter() {
 // LIBRARY VIEW
 // ═══════════════════════════════════════════
 function LibraryView({
+  theme,
   songs,
   setlist,
   onAdd,
@@ -466,35 +534,35 @@ function LibraryView({
         </div>
       )}
       <div style={styles.toolbar}>
-        <button className="btn-primary" style={styles.btnPrimary} onClick={onAdd}>
+        <button className="btn-primary" style={{ ...styles.btnPrimary, background: theme.accent, color: "#111" }} onClick={onAdd}>
           <Icon d={icons.plus} size={16} /> Neuer Song
         </button>
-        <button className="btn-secondary" style={styles.btnSecondary} onClick={() => txtRef.current?.click()}>
+        <button className="btn-secondary" style={{ ...styles.btnSecondary, background: theme.btnSecBg, border: `1px solid ${theme.btnSecBorder}`, color: theme.btnSecText }} onClick={() => txtRef.current?.click()}>
           <Icon d={icons.upload} size={16} /> TXT importieren
         </button>
-        <button className="btn-secondary" style={styles.btnSecondary} onClick={() => docxRef.current?.click()}>
+        <button className="btn-secondary" style={{ ...styles.btnSecondary, background: theme.btnSecBg, border: `1px solid ${theme.btnSecBorder}`, color: theme.btnSecText }} onClick={() => docxRef.current?.click()}>
           <Icon d={icons.docx} size={16} /> DOCX importieren
         </button>
         {songs.length > 0 && (
-          <button className="btn-secondary" style={styles.btnSecondary} onClick={onAddAllToSetlist}>
+          <button className="btn-secondary" style={{ ...styles.btnSecondary, background: theme.btnSecBg, border: `1px solid ${theme.btnSecBorder}`, color: theme.btnSecText }} onClick={onAddAllToSetlist}>
             <Icon d={icons.list} size={16} /> Alle zur Setlist
           </button>
         )}
         {songs.length > 0 && (
           confirmClearLibrary ? (
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ color: "#fca5a5", fontSize: 13 }}>Alle {songs.length} Songs löschen?</span>
-              <button className="btn-danger" style={styles.btnDanger}
+              <span style={{ color: theme.danger, fontSize: 13 }}>Alle {songs.length} Songs löschen?</span>
+              <button className="btn-danger" style={{ ...styles.btnDanger, background: theme.dangerBg, border: `1px solid ${theme.dangerBorder}`, color: theme.danger }}
                 onClick={() => { onClearLibrary(); setConfirmClearLibrary(false); }}>
                 Ja, löschen
               </button>
-              <button className="btn-secondary" style={styles.btnSecondary}
+              <button className="btn-secondary" style={{ ...styles.btnSecondary, background: theme.btnSecBg, border: `1px solid ${theme.btnSecBorder}`, color: theme.btnSecText }}
                 onClick={() => setConfirmClearLibrary(false)}>
                 Abbrechen
               </button>
             </div>
           ) : (
-            <button className="btn-danger" style={styles.btnDanger}
+            <button className="btn-danger" style={{ ...styles.btnDanger, background: theme.dangerBg, border: `1px solid ${theme.dangerBorder}`, color: theme.danger }}
               onClick={() => setConfirmClearLibrary(true)}>
               <Icon d={icons.trash} size={16} /> Bibliothek leeren
             </button>
@@ -521,14 +589,14 @@ function LibraryView({
         <div style={styles.searchRow}>
           <input
             className="search-input"
-            style={styles.searchInput}
+            style={{ ...styles.searchInput, background: theme.inputBg, border: `1px solid ${theme.inputBorder}`, color: theme.textStrong }}
             placeholder="Songs durchsuchen…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           {search && (
-            <button className="btn-icon" style={{ ...styles.btnIcon, flexShrink: 0 }} onClick={() => setSearch("")}>
-              <Icon d={icons.x} size={16} color="#9ca3af" />
+            <button className="btn-icon" style={{ ...styles.btnIcon, border: `1px solid ${theme.border}`, flexShrink: 0 }} onClick={() => setSearch("")}>
+              <Icon d={icons.x} size={16} color={theme.textMuted} />
             </button>
           )}
         </div>
@@ -536,13 +604,13 @@ function LibraryView({
 
       {songs.length === 0 ? (
         <div style={styles.empty}>
-          <Icon d={icons.music} size={48} color="#4b5563" />
-          <p style={styles.emptyText}>Noch keine Songs. Füge deinen ersten Song hinzu!</p>
+          <Icon d={icons.music} size={48} color={theme.textFaint} />
+          <p style={{ ...styles.emptyText, color: theme.textFaint }}>Noch keine Songs. Füge deinen ersten Song hinzu!</p>
         </div>
       ) : filtered.length === 0 ? (
         <div style={styles.empty}>
-          <Icon d={icons.x} size={36} color="#4b5563" />
-          <p style={styles.emptyText}>Kein Song gefunden für „{search}"</p>
+          <Icon d={icons.x} size={36} color={theme.textFaint} />
+          <p style={{ ...styles.emptyText, color: theme.textFaint }}>Kein Song gefunden für „{search}"</p>
         </div>
       ) : (
         <div style={styles.songGrid}>
@@ -550,54 +618,54 @@ function LibraryView({
             <div
               key={song.id}
               className="song-card"
-              style={{ ...styles.songCard, borderLeft: `3px solid ${accentColor(song.id)}` }}
+              style={{ ...styles.songCard, background: theme.surface, border: `1px solid ${theme.border}`, borderLeft: `3px solid ${accentColor(song.id)}` }}
             >
               <div style={styles.songCardHeader}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <h3 style={styles.songTitle}>{song.title || "Ohne Titel"}</h3>
-                  {song.artist && <p style={styles.songArtist}>{song.artist}</p>}
+                  <h3 style={{ ...styles.songTitle, color: theme.textStrong }}>{song.title || "Ohne Titel"}</h3>
+                  {song.artist && <p style={{ ...styles.songArtist, color: theme.textMuted }}>{song.artist}</p>}
                 </div>
-                <span style={styles.songLines}>
+                <span style={{ ...styles.songLines, color: theme.textFaint }}>
                   {song.text.split("\n").filter((l) => l.trim()).length} Zeilen
                 </span>
               </div>
-              <p style={styles.songPreview}>
+              <p style={{ ...styles.songPreview, color: theme.textFaint }}>
                 {song.text.slice(0, 120)}
                 {song.text.length > 120 ? "…" : ""}
               </p>
               <div style={styles.songActions}>
-                <button className="btn-icon" style={styles.btnIcon} title="Abspielen" onClick={() => onPlay(song.id)}>
+                <button className="btn-icon" style={{ ...styles.btnIcon, border: `1px solid ${theme.border}` }} title="Abspielen" onClick={() => onPlay(song.id)}>
                   <Icon d={icons.play} size={18} color="#22c55e" />
                 </button>
-                <button className="btn-icon" style={styles.btnIcon} title="Bearbeiten" onClick={() => onEdit(song)}>
+                <button className="btn-icon" style={{ ...styles.btnIcon, border: `1px solid ${theme.border}` }} title="Bearbeiten" onClick={() => onEdit(song)}>
                   <Icon d={icons.edit} size={18} color="#60a5fa" />
                 </button>
                 {setlist.includes(song.id) ? (
-                  <span style={styles.inSetlistBadge}>✓ Setlist</span>
+                  <span style={{ ...styles.inSetlistBadge, color: theme.accent, background: theme.accentDim }}>✓ Setlist</span>
                 ) : (
-                  <button className="btn-icon" style={styles.btnIcon} title="Zur Setlist" onClick={() => onAddToSetlist(song.id)}>
-                    <Icon d={icons.list} size={18} color="#f59e0b" />
+                  <button className="btn-icon" style={{ ...styles.btnIcon, border: `1px solid ${theme.border}` }} title="Zur Setlist" onClick={() => onAddToSetlist(song.id)}>
+                    <Icon d={icons.list} size={18} color={theme.accent} />
                   </button>
                 )}
                 {confirmDeleteId === song.id ? (
                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                     <button
                       className="btn-danger"
-                      style={{ ...styles.btnDanger, padding: "4px 10px", fontSize: 12 }}
+                      style={{ ...styles.btnDanger, background: theme.dangerBg, border: `1px solid ${theme.dangerBorder}`, color: theme.danger, padding: "4px 10px", fontSize: 12 }}
                       onClick={() => { onDelete(song.id); setConfirmDeleteId(null); }}
                     >
                       Löschen
                     </button>
                     <button
                       className="btn-icon"
-                      style={styles.btnIcon}
+                      style={{ ...styles.btnIcon, border: `1px solid ${theme.border}` }}
                       onClick={() => setConfirmDeleteId(null)}
                     >
-                      <Icon d={icons.x} size={15} color="#9ca3af" />
+                      <Icon d={icons.x} size={15} color={theme.textMuted} />
                     </button>
                   </div>
                 ) : (
-                  <button className="btn-icon" style={styles.btnIcon} title="Löschen"
+                  <button className="btn-icon" style={{ ...styles.btnIcon, border: `1px solid ${theme.border}` }} title="Löschen"
                     onClick={() => setConfirmDeleteId(song.id)}>
                     <Icon d={icons.trash} size={18} color="#ef4444" />
                   </button>
@@ -615,6 +683,7 @@ function LibraryView({
 // SETLIST VIEW
 // ═══════════════════════════════════════════
 function SetlistView({
+  theme,
   setlist,
   songs,
   onRemove,
@@ -643,15 +712,15 @@ function SetlistView({
       <div style={styles.toolbar}>
         {setlist.length > 0 && (
           <>
-            <button className="btn-primary" style={styles.btnPrimary} onClick={onPlayAll}>
+            <button className="btn-primary" style={{ ...styles.btnPrimary, background: theme.accent, color: "#111" }} onClick={onPlayAll}>
               <Icon d={icons.play} size={16} /> Aufführung starten
             </button>
-            <button className="btn-secondary" style={styles.btnSecondary} onClick={onExport}>
+            <button className="btn-secondary" style={{ ...styles.btnSecondary, background: theme.btnSecBg, border: `1px solid ${theme.btnSecBorder}`, color: theme.btnSecText }} onClick={onExport}>
               <Icon d={icons.download} size={16} /> Exportieren
             </button>
           </>
         )}
-        <button className="btn-secondary" style={styles.btnSecondary} onClick={() => fileRef.current?.click()}>
+        <button className="btn-secondary" style={{ ...styles.btnSecondary, background: theme.btnSecBg, border: `1px solid ${theme.btnSecBorder}`, color: theme.btnSecText }} onClick={() => fileRef.current?.click()}>
           <Icon d={icons.upload} size={16} /> Importieren
         </button>
         <input
@@ -664,18 +733,18 @@ function SetlistView({
         {setlist.length > 0 && (
           confirmClear ? (
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ color: "#fca5a5", fontSize: 13 }}>Wirklich leeren?</span>
-              <button className="btn-danger" style={styles.btnDanger}
+              <span style={{ color: theme.danger, fontSize: 13 }}>Wirklich leeren?</span>
+              <button className="btn-danger" style={{ ...styles.btnDanger, background: theme.dangerBg, border: `1px solid ${theme.dangerBorder}`, color: theme.danger }}
                 onClick={() => { onClear(); setConfirmClear(false); }}>
                 Ja, leeren
               </button>
-              <button className="btn-secondary" style={styles.btnSecondary}
+              <button className="btn-secondary" style={{ ...styles.btnSecondary, background: theme.btnSecBg, border: `1px solid ${theme.btnSecBorder}`, color: theme.btnSecText }}
                 onClick={() => setConfirmClear(false)}>
                 Abbrechen
               </button>
             </div>
           ) : (
-            <button className="btn-danger" style={styles.btnDanger}
+            <button className="btn-danger" style={{ ...styles.btnDanger, background: theme.dangerBg, border: `1px solid ${theme.dangerBorder}`, color: theme.danger }}
               onClick={() => setConfirmClear(true)}>
               <Icon d={icons.trash} size={16} /> Leeren
             </button>
@@ -685,8 +754,8 @@ function SetlistView({
 
       {setlistSongs.length === 0 ? (
         <div style={styles.empty}>
-          <Icon d={icons.list} size={48} color="#4b5563" />
-          <p style={styles.emptyText}>
+          <Icon d={icons.list} size={48} color={theme.textFaint} />
+          <p style={{ ...styles.emptyText, color: theme.textFaint }}>
             Die Setlist ist leer. Füge Songs aus der Bibliothek hinzu.
           </p>
         </div>
@@ -700,29 +769,29 @@ function SetlistView({
                 dragIdx === idx ? "dragging" : "",
                 dragOverIdx === idx && dragIdx !== idx ? "drag-over" : "",
               ].join(" ")}
-              style={{ ...styles.setlistItem, borderLeft: `3px solid ${accentColor(song.id)}`, cursor: "grab" }}
+              style={{ ...styles.setlistItem, background: theme.surface, border: `1px solid ${theme.border}`, borderLeft: `3px solid ${accentColor(song.id)}`, cursor: "grab" }}
               draggable
               onDragStart={() => setDragIdx(idx)}
               onDragOver={(e) => { e.preventDefault(); setDragOverIdx(idx); }}
               onDrop={() => handleDrop(idx)}
               onDragEnd={() => { setDragIdx(null); setDragOverIdx(null); }}
             >
-              <span style={{ ...styles.setlistNum, userSelect: "none" }}>{idx + 1}</span>
+              <span style={{ ...styles.setlistNum, userSelect: "none", color: theme.accent }}>{idx + 1}</span>
               <div style={styles.setlistInfo}>
-                <span style={styles.setlistSongTitle}>{song.title}</span>
-                {song.artist && <span style={styles.setlistArtist}>{song.artist}</span>}
+                <span style={{ ...styles.setlistSongTitle, color: theme.textStrong }}>{song.title}</span>
+                {song.artist && <span style={{ ...styles.setlistArtist, color: theme.textMuted }}>{song.artist}</span>}
               </div>
               <div style={styles.setlistActions}>
-                <button className="btn-small" style={styles.btnSmall} onClick={() => onMove(idx, -1)} disabled={idx === 0}>
+                <button className="btn-small" style={{ ...styles.btnSmall, background: theme.btnSmallBg, color: theme.textMuted }} onClick={() => onMove(idx, -1)} disabled={idx === 0}>
                   <Icon d={icons.up} size={16} />
                 </button>
-                <button className="btn-small" style={styles.btnSmall} onClick={() => onMove(idx, 1)} disabled={idx === setlistSongs.length - 1}>
+                <button className="btn-small" style={{ ...styles.btnSmall, background: theme.btnSmallBg, color: theme.textMuted }} onClick={() => onMove(idx, 1)} disabled={idx === setlistSongs.length - 1}>
                   <Icon d={icons.down} size={16} />
                 </button>
-                <button className="btn-small" style={styles.btnSmall} onClick={() => onPlay(song.id)}>
+                <button className="btn-small" style={{ ...styles.btnSmall, background: theme.btnSmallBg }} onClick={() => onPlay(song.id)}>
                   <Icon d={icons.play} size={16} color="#22c55e" />
                 </button>
-                <button className="btn-small" style={styles.btnSmall} onClick={() => onRemove(song.id)}>
+                <button className="btn-small" style={{ ...styles.btnSmall, background: theme.btnSmallBg }} onClick={() => onRemove(song.id)}>
                   <Icon d={icons.x} size={16} color="#ef4444" />
                 </button>
               </div>
@@ -737,22 +806,22 @@ function SetlistView({
 // ═══════════════════════════════════════════
 // EDIT VIEW
 // ═══════════════════════════════════════════
-function EditView({ song, onSave, onCancel }) {
+function EditView({ song, theme, isDark, onSave, onCancel }) {
   const [title, setTitle] = useState(song?.title || "");
   const [artist, setArtist] = useState(song?.artist || "");
   const [text, setText] = useState(song?.text || "");
 
   return (
-    <div style={styles.app}>
-      <header style={styles.header}>
-        <h1 style={styles.title}>{song?.id ? "Song bearbeiten" : "Neuer Song"}</h1>
+    <div style={{ ...styles.app, background: theme.appBg, color: theme.text }} data-theme={isDark ? "dark" : "light"}>
+      <header style={{ ...styles.header, background: theme.headerBg, borderBottom: `1px solid ${theme.headerBorder}` }}>
+        <h1 style={{ ...styles.title, color: theme.accent }}>{song?.id ? "Song bearbeiten" : "Neuer Song"}</h1>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn-secondary" style={styles.btnSecondary} onClick={onCancel}>
+          <button className="btn-secondary" style={{ ...styles.btnSecondary, background: theme.btnSecBg, border: `1px solid ${theme.btnSecBorder}`, color: theme.btnSecText }} onClick={onCancel}>
             Abbrechen
           </button>
           <button
             className="btn-primary"
-            style={{ ...styles.btnPrimary, opacity: !text.trim() ? 0.5 : 1 }}
+            style={{ ...styles.btnPrimary, background: theme.accent, color: "#111", opacity: !text.trim() ? 0.5 : 1 }}
             onClick={() => onSave({ ...song, title: title || "Ohne Titel", artist, text })}
             disabled={!text.trim()}
           >
@@ -763,9 +832,9 @@ function EditView({ song, onSave, onCancel }) {
       <main style={styles.editMain}>
         <div style={styles.editRow}>
           <div style={styles.editField}>
-            <label style={styles.label}>Titel</label>
+            <label style={{ ...styles.label, color: theme.textMuted }}>Titel</label>
             <input
-              style={styles.input}
+              style={{ ...styles.input, background: theme.inputBg, border: `1px solid ${theme.inputBorder}`, color: theme.textStrong }}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Songtitel…"
@@ -773,24 +842,116 @@ function EditView({ song, onSave, onCancel }) {
             />
           </div>
           <div style={styles.editField}>
-            <label style={styles.label}>Interpret</label>
+            <label style={{ ...styles.label, color: theme.textMuted }}>Interpret</label>
             <input
-              style={styles.input}
+              style={{ ...styles.input, background: theme.inputBg, border: `1px solid ${theme.inputBorder}`, color: theme.textStrong }}
               value={artist}
               onChange={(e) => setArtist(e.target.value)}
               placeholder="Optional…"
             />
           </div>
         </div>
-        <label style={styles.label}>Songtext</label>
+        <label style={{ ...styles.label, color: theme.textMuted }}>Songtext</label>
         <textarea
-          style={styles.textarea}
+          style={{ ...styles.textarea, background: theme.inputBg, border: `1px solid ${theme.inputBorder}`, color: theme.textStrong }}
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={"Hier den Songtext eingeben…\n\nTipp: Leerzeilen trennen die Strophen."}
           spellCheck={false}
         />
       </main>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════
+// HELP MODAL
+// ═══════════════════════════════════════════
+function HelpModal({ onClose, theme }) {
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  const Section = ({ title, children }) => (
+    <div style={{ marginBottom: 24 }}>
+      <h3 style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: theme.accent, textTransform: "uppercase", letterSpacing: "0.08em" }}>{title}</h3>
+      {children}
+    </div>
+  );
+
+  const Feature = ({ icon, label, desc }) => (
+    <div style={{ display: "flex", gap: 12, marginBottom: 10, alignItems: "flex-start" }}>
+      <div style={{ width: 32, height: 32, borderRadius: 8, background: theme.accentDim, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <Icon d={icon} size={16} color={theme.accent} />
+      </div>
+      <div>
+        <div style={{ fontSize: 14, fontWeight: 600, color: theme.textStrong, marginBottom: 2 }}>{label}</div>
+        <div style={{ fontSize: 13, color: theme.textMuted, lineHeight: 1.5 }}>{desc}</div>
+      </div>
+    </div>
+  );
+
+  const Key = ({ k }) => (
+    <kbd style={{ display: "inline-block", padding: "2px 7px", borderRadius: 5, background: theme.surface, border: `1px solid ${theme.border}`, fontSize: 12, fontFamily: "'JetBrains Mono', monospace", color: theme.textStrong, marginRight: 4 }}>{k}</kbd>
+  );
+
+  const Shortcut = ({ keys, desc }) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+      <div style={{ minWidth: 140 }}>
+        {keys.map((k) => <Key key={k} k={k} />)}
+      </div>
+      <span style={{ fontSize: 13, color: theme.textMuted }}>{desc}</span>
+    </div>
+  );
+
+  return (
+    <div
+      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}
+      onClick={onClose}
+    >
+      <div
+        style={{ background: theme.headerBg, border: `1px solid ${theme.border}`, borderRadius: 16, padding: "28px 32px", maxWidth: 520, width: "90%", maxHeight: "85vh", overflowY: "auto", color: theme.text, position: "relative" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          style={{ position: "absolute", top: 16, right: 16, background: "transparent", border: "none", cursor: "pointer", padding: 4 }}
+        >
+          <Icon d={icons.x} size={20} color={theme.textMuted} />
+        </button>
+
+        <h2 style={{ margin: "0 0 24px", fontSize: 20, fontWeight: 700, color: theme.textStrong }}>
+          Kurzanleitung
+        </h2>
+
+        <Section title="Funktionen">
+          <Feature icon={icons.music} label="Bibliothek" desc="Verwalte deine Songs. Importiere TXT- oder DOCX-Dateien per Klick oder ziehe sie direkt ins Fenster." />
+          <Feature icon={icons.list} label="Setlist" desc="Stelle die Reihenfolge deiner Songs zusammen. Ziehe Einträge zur Neusortierung. Exportiere & importiere als JSON." />
+          <Feature icon={icons.edit} label="Editor" desc="Bearbeite Titel, Interpret und Songtext. Leerzeilen zwischen Strophen verbessern die Lesbarkeit im Teleprompter." />
+          <Feature icon={icons.play} label="Teleprompter" desc="Startet den Vollbild-Teleprompter. Mit Countdown (wenn am Anfang) und automatischem Scroll in deinem Tempo." />
+        </Section>
+
+        <Section title="Tastenkürzel im Teleprompter">
+          <Shortcut keys={["LEERTASTE"]} desc="Play / Pause (Countdown abbrechen)" />
+          <Shortcut keys={["←", "→"]} desc="Zurück / Vorwärts springen" />
+          <Shortcut keys={["↑", "↓"]} desc="Tempo erhöhen / verringern" />
+          <Shortcut keys={["+", "−"]} desc="Schriftgröße ändern" />
+          <Shortcut keys={["R"]} desc="Zurücksetzen (zum Anfang)" />
+          <Shortcut keys={["F"]} desc="Vollbild ein/aus" />
+          <Shortcut keys={["ESC"]} desc="Teleprompter beenden" />
+        </Section>
+
+        <Section title="Tipps">
+          <p style={{ fontSize: 13, color: theme.textMuted, margin: 0, lineHeight: 1.7 }}>
+            • Mehrere TXT-Dateien gleichzeitig importieren: alle direkt in die Bibliothek<br />
+            • Songs per Drag & Drop in der Setlist umsortieren<br />
+            • Tippe im Teleprompter auf den Bildschirm (Touch): kurzes Tippen = Play/Pause, Wischen = Tempo<br />
+            • Deine Bibliothek und Setlist werden automatisch im Browser gespeichert
+          </p>
+        </Section>
+      </div>
     </div>
   );
 }

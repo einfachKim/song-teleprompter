@@ -137,3 +137,22 @@ body {
   border-color: #f59e0b !important;
   background: rgba(245,158,11,0.06) !important;
 }
+
+/* ── Light mode overrides ── */
+[data-theme="light"] body { background: #f5f0e8; }
+
+[data-theme="light"] .btn-secondary:hover {
+  background: rgba(0,0,0,0.08) !important;
+  border-color: #b8b0a4 !important;
+}
+[data-theme="light"] .btn-icon:hover { background: rgba(0,0,0,0.08) !important; }
+[data-theme="light"] .btn-small:hover:not(:disabled) { background: rgba(0,0,0,0.1) !important; }
+[data-theme="light"] .btn-danger:hover { background: rgba(185,28,28,0.15) !important; }
+
+[data-theme="light"] .song-card:hover {
+  border-color: #c0b8ac !important;
+  background: rgba(0,0,0,0.06) !important;
+}
+[data-theme="light"] .setlist-item:hover { background: rgba(0,0,0,0.06) !important; }
+[data-theme="light"] .tab-btn:hover { color: #3d3830 !important; }
+[data-theme="light"] .search-input:focus { border-color: #b45309 !important; }
