@@ -58,8 +58,10 @@ const icons = {
   music:    "M9 18V5l12-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zM21 16a3 3 0 11-6 0 3 3 0 016 0z",
   download: "M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3",
   upload:   "M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12",
-  maximize: "M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3",
-  minimize: "M8 3v3a2 2 0 01-2 2H3m18 0h-3a2 2 0 01-2-2V3m0 18v-3a2 2 0 012-2h3M3 16h3a2 2 0 012 2v3",
+  maximize:    "M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3",
+  minimize:    "M8 3v3a2 2 0 01-2 2H3m18 0h-3a2 2 0 01-2-2V3m0 18v-3a2 2 0 012-2h3M3 16h3a2 2 0 012 2v3",
+  alignLeft:   "M3 6h18M3 12h12M3 18h15",
+  alignCenter: "M3 6h18M6 12h12M4 18h16",
   sun:      "M12 3v1M12 20v1M4.22 4.22l.7.7M18.36 18.36l.7.7M3 12H2M22 12h-1M4.22 19.78l.7-.7M18.36 5.64l.7-.7M12 8a4 4 0 100 8 4 4 0 000-8z",
   moon:     "M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z",
   rewind:   "M11 19V5l-7 7 7 7zM21 19V5l-7 7 7 7z",
@@ -652,6 +654,7 @@ function PerformView({
   const [showControls, setShowControls] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLightMode, setIsLightMode] = useState(false);
+  const [textAlign, setTextAlign] = useState("left");
 
   const containerRef = useRef(null);
   const outerRef = useRef(null);
@@ -879,6 +882,7 @@ function PerformView({
             fontSize,
             lineHeight: `${fontSize * 1.65}px`,
             color: textColor,
+            textAlign,
             textShadow: isLightMode ? "none" : "0 2px 8px rgba(0,0,0,0.6)",
           }}
         >
@@ -920,9 +924,18 @@ function PerformView({
             {song.title}
           </span>
           {isSetlistMode && (
-            <span style={styles.performSetlistPos}>
-              {currentIndex + 1} / {totalInSetlist}
-            </span>
+            <div style={styles.dotNav}>
+              {Array.from({ length: Math.min(totalInSetlist, 20) }).map((_, i) => (
+                <div key={i} style={{
+                  height: 6,
+                  width: i === currentIndex ? 18 : 6,
+                  borderRadius: 3,
+                  background: i === currentIndex ? "#f59e0b" : "rgba(255,255,255,0.25)",
+                  transition: "width 0.3s, background 0.3s",
+                  flexShrink: 0,
+                }} />
+              ))}
+            </div>
           )}
         </div>
 
@@ -930,6 +943,11 @@ function PerformView({
           <button className="perform-btn" style={styles.performBtn} onClick={() => setFontSize((s) => Math.max(20, s - 4))}>A−</button>
           <span style={{ color: "#9ca3af", fontSize: 13 }}>{fontSize}px</span>
           <button className="perform-btn" style={styles.performBtn} onClick={() => setFontSize((s) => Math.min(80, s + 4))}>A+</button>
+          <button className="perform-btn" style={styles.performBtn}
+            onClick={() => setTextAlign((a) => a === "left" ? "center" : "left")}
+            title="Ausrichtung">
+            <Icon d={textAlign === "left" ? icons.alignCenter : icons.alignLeft} size={18} />
+          </button>
           <button className="perform-btn" style={styles.performBtn} onClick={() => setIsLightMode((m) => !m)} title="Dark/Light">
             <Icon d={isLightMode ? icons.moon : icons.sun} size={18} />
           </button>
@@ -979,13 +997,15 @@ function PerformView({
           <Icon d={icons.fastFwd} size={20} />
         </button>
         <div style={styles.speedControl}>
-          <button className="perform-btn" style={styles.performBtn} onClick={() => setSpeed((s) => Math.max(0, s - 1))}>
-            <Icon d={icons.down} size={18} />
-          </button>
           <span style={styles.speedLabel}>{speed}</span>
-          <button className="perform-btn" style={styles.performBtn} onClick={() => setSpeed((s) => Math.min(20, s + 1))}>
-            <Icon d={icons.up} size={18} />
-          </button>
+          <input
+            className="speed-slider"
+            type="range"
+            min="0"
+            max="20"
+            value={speed}
+            onChange={(e) => setSpeed(Number(e.target.value))}
+          />
         </div>
         {onNext && (
           <button className="perform-btn" style={styles.performBtn} onClick={onNext} title="Nächster Song">
@@ -1350,6 +1370,12 @@ const styles = {
     fontWeight: 600,
   },
   performSetlistPos: { fontSize: 12, color: "#6b7280" },
+  dotNav: {
+    display: "flex",
+    gap: 4,
+    alignItems: "center",
+    marginTop: 4,
+  },
   performBottomBar: {
     position: "absolute",
     bottom: 0,
