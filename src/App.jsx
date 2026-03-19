@@ -982,13 +982,15 @@ function PerformView({
   const progressFillRef = useRef(null);
   const controlsTimer = useRef(null);
   const speedRef = useRef(speed);
+  const scrollAccum = useRef(0);
   useEffect(() => { speedRef.current = speed; }, [speed]);
 
   // Speed 0–20, exponentiell (0 = Stopp, 20 = schnell)
+  // px pro Frame als Fließkommazahl — wird im RAF akkumuliert
   const getPixelSpeed = () => {
     const s = speedRef.current;
     if (s === 0) return 0;
-    return 0.15 + Math.pow(s / 20, 1.8) * 6;
+    return Math.pow(s / 20, 1.6) * 5;
   };
 
   // Progress direkt ins DOM schreiben – kein React-State-Lag
@@ -1003,11 +1005,17 @@ function PerformView({
   // Auto-scroll
   useEffect(() => {
     if (!scrolling || !containerRef.current) return;
+    scrollAccum.current = 0;
     let rafId;
     const step = () => {
       const el = containerRef.current;
       if (!el) return;
-      el.scrollTop += getPixelSpeed();
+      scrollAccum.current += getPixelSpeed();
+      const px = Math.floor(scrollAccum.current);
+      if (px > 0) {
+        el.scrollTop += px;
+        scrollAccum.current -= px;
+      }
       updateProgress(el);
       if (el.scrollTop >= el.scrollHeight - el.clientHeight - 2) {
         setScrolling(false);
