@@ -18,6 +18,13 @@ const saveSetlist = (ids) => localStorage.setItem(SETLIST_KEY, JSON.stringify(id
 // ─── Unique ID ───
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
+// ─── Song accent colors ───
+const ACCENT_COLORS = ["#f59e0b", "#60a5fa", "#a78bfa", "#34d399", "#f87171", "#fb923c", "#38bdf8", "#e879f9"];
+const accentColor = (id) => {
+  const n = (id || "").split("").reduce((sum, c) => sum + c.charCodeAt(0), 0);
+  return ACCENT_COLORS[n % ACCENT_COLORS.length];
+};
+
 // ─── Icons (inline SVG paths) ───
 const Icon = ({ d, size = 20, color = "currentColor", ...props }) => (
   <svg
@@ -284,12 +291,14 @@ export default function SongTeleprompter() {
         </div>
         <div style={styles.tabs}>
           <button
+            className="tab-btn"
             style={{ ...styles.tab, ...(view === "library" ? styles.tabActive : {}) }}
             onClick={() => setView("library")}
           >
             Bibliothek ({songs.length})
           </button>
           <button
+            className="tab-btn"
             style={{ ...styles.tab, ...(view === "setlist" ? styles.tabActive : {}) }}
             onClick={() => setView("setlist")}
           >
@@ -363,17 +372,17 @@ function LibraryView({
   return (
     <div style={styles.viewContainer}>
       <div style={styles.toolbar}>
-        <button style={styles.btnPrimary} onClick={onAdd}>
+        <button className="btn-primary" style={styles.btnPrimary} onClick={onAdd}>
           <Icon d={icons.plus} size={16} /> Neuer Song
         </button>
-        <button style={styles.btnSecondary} onClick={() => txtRef.current?.click()}>
+        <button className="btn-secondary" style={styles.btnSecondary} onClick={() => txtRef.current?.click()}>
           <Icon d={icons.upload} size={16} /> TXT importieren
         </button>
-        <button style={styles.btnSecondary} onClick={() => docxRef.current?.click()}>
+        <button className="btn-secondary" style={styles.btnSecondary} onClick={() => docxRef.current?.click()}>
           <Icon d={icons.docx} size={16} /> DOCX importieren
         </button>
         {songs.length > 0 && (
-          <button style={styles.btnSecondary} onClick={onAddAllToSetlist}>
+          <button className="btn-secondary" style={styles.btnSecondary} onClick={onAddAllToSetlist}>
             <Icon d={icons.list} size={16} /> Alle zur Setlist
           </button>
         )}
@@ -402,7 +411,11 @@ function LibraryView({
       ) : (
         <div style={styles.songGrid}>
           {songs.map((song) => (
-            <div key={song.id} style={styles.songCard}>
+            <div
+              key={song.id}
+              className="song-card"
+              style={{ ...styles.songCard, borderLeft: `3px solid ${accentColor(song.id)}` }}
+            >
               <div style={styles.songCardHeader}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <h3 style={styles.songTitle}>{song.title || "Ohne Titel"}</h3>
@@ -417,38 +430,21 @@ function LibraryView({
                 {song.text.length > 120 ? "…" : ""}
               </p>
               <div style={styles.songActions}>
-                <button
-                  style={styles.btnIcon}
-                  title="Abspielen"
-                  onClick={() => onPlay(song.id)}
-                >
+                <button className="btn-icon" style={styles.btnIcon} title="Abspielen" onClick={() => onPlay(song.id)}>
                   <Icon d={icons.play} size={18} color="#22c55e" />
                 </button>
-                <button
-                  style={styles.btnIcon}
-                  title="Bearbeiten"
-                  onClick={() => onEdit(song)}
-                >
+                <button className="btn-icon" style={styles.btnIcon} title="Bearbeiten" onClick={() => onEdit(song)}>
                   <Icon d={icons.edit} size={18} color="#60a5fa" />
                 </button>
                 {setlist.includes(song.id) ? (
                   <span style={styles.inSetlistBadge}>✓ Setlist</span>
                 ) : (
-                  <button
-                    style={styles.btnIcon}
-                    title="Zur Setlist hinzufügen"
-                    onClick={() => onAddToSetlist(song.id)}
-                  >
+                  <button className="btn-icon" style={styles.btnIcon} title="Zur Setlist" onClick={() => onAddToSetlist(song.id)}>
                     <Icon d={icons.list} size={18} color="#f59e0b" />
                   </button>
                 )}
-                <button
-                  style={styles.btnIcon}
-                  title="Löschen"
-                  onClick={() => {
-                    if (confirm(`"${song.title}" wirklich löschen?`)) onDelete(song.id);
-                  }}
-                >
+                <button className="btn-icon" style={styles.btnIcon} title="Löschen"
+                  onClick={() => { if (confirm(`"${song.title}" wirklich löschen?`)) onDelete(song.id); }}>
                   <Icon d={icons.trash} size={18} color="#ef4444" />
                 </button>
               </div>
@@ -482,15 +478,15 @@ function SetlistView({
       <div style={styles.toolbar}>
         {setlist.length > 0 && (
           <>
-            <button style={styles.btnPrimary} onClick={onPlayAll}>
+            <button className="btn-primary" style={styles.btnPrimary} onClick={onPlayAll}>
               <Icon d={icons.play} size={16} /> Aufführung starten
             </button>
-            <button style={styles.btnSecondary} onClick={onExport}>
+            <button className="btn-secondary" style={styles.btnSecondary} onClick={onExport}>
               <Icon d={icons.download} size={16} /> Exportieren
             </button>
           </>
         )}
-        <button style={styles.btnSecondary} onClick={() => fileRef.current?.click()}>
+        <button className="btn-secondary" style={styles.btnSecondary} onClick={() => fileRef.current?.click()}>
           <Icon d={icons.upload} size={16} /> Importieren
         </button>
         <input
@@ -501,12 +497,8 @@ function SetlistView({
           onChange={onImport}
         />
         {setlist.length > 0 && (
-          <button
-            style={styles.btnDanger}
-            onClick={() => {
-              if (confirm("Setlist leeren?")) onClear();
-            }}
-          >
+          <button className="btn-danger" style={styles.btnDanger}
+            onClick={() => { if (confirm("Setlist leeren?")) onClear(); }}>
             <Icon d={icons.trash} size={16} /> Leeren
           </button>
         )}
@@ -522,33 +514,23 @@ function SetlistView({
       ) : (
         <div style={styles.setlistContainer}>
           {setlistSongs.map((song, idx) => (
-            <div key={song.id} style={styles.setlistItem}>
+            <div key={song.id} className="setlist-item" style={{ ...styles.setlistItem, borderLeft: `3px solid ${accentColor(song.id)}` }}>
               <span style={styles.setlistNum}>{idx + 1}</span>
               <div style={styles.setlistInfo}>
                 <span style={styles.setlistSongTitle}>{song.title}</span>
-                {song.artist && (
-                  <span style={styles.setlistArtist}>{song.artist}</span>
-                )}
+                {song.artist && <span style={styles.setlistArtist}>{song.artist}</span>}
               </div>
               <div style={styles.setlistActions}>
-                <button
-                  style={styles.btnSmall}
-                  onClick={() => onMove(idx, -1)}
-                  disabled={idx === 0}
-                >
+                <button className="btn-small" style={styles.btnSmall} onClick={() => onMove(idx, -1)} disabled={idx === 0}>
                   <Icon d={icons.up} size={16} />
                 </button>
-                <button
-                  style={styles.btnSmall}
-                  onClick={() => onMove(idx, 1)}
-                  disabled={idx === setlistSongs.length - 1}
-                >
+                <button className="btn-small" style={styles.btnSmall} onClick={() => onMove(idx, 1)} disabled={idx === setlistSongs.length - 1}>
                   <Icon d={icons.down} size={16} />
                 </button>
-                <button style={styles.btnSmall} onClick={() => onPlay(song.id)}>
+                <button className="btn-small" style={styles.btnSmall} onClick={() => onPlay(song.id)}>
                   <Icon d={icons.play} size={16} color="#22c55e" />
                 </button>
-                <button style={styles.btnSmall} onClick={() => onRemove(song.id)}>
+                <button className="btn-small" style={styles.btnSmall} onClick={() => onRemove(song.id)}>
                   <Icon d={icons.x} size={16} color="#ef4444" />
                 </button>
               </div>
@@ -573,14 +555,13 @@ function EditView({ song, onSave, onCancel }) {
       <header style={styles.header}>
         <h1 style={styles.title}>{song?.id ? "Song bearbeiten" : "Neuer Song"}</h1>
         <div style={{ display: "flex", gap: 8 }}>
-          <button style={styles.btnSecondary} onClick={onCancel}>
+          <button className="btn-secondary" style={styles.btnSecondary} onClick={onCancel}>
             Abbrechen
           </button>
           <button
+            className="btn-primary"
             style={{ ...styles.btnPrimary, opacity: !text.trim() ? 0.5 : 1 }}
-            onClick={() =>
-              onSave({ ...song, title: title || "Ohne Titel", artist, text })
-            }
+            onClick={() => onSave({ ...song, title: title || "Ohne Titel", artist, text })}
             disabled={!text.trim()}
           >
             <Icon d={icons.save} size={16} /> Speichern
@@ -900,7 +881,7 @@ function PerformView({
           background: barBg,
         }}
       >
-        <button style={styles.performBtn} onClick={onExit}>
+        <button className="perform-btn" style={styles.performBtn} onClick={onExit}>
           <Icon d={icons.x} size={20} /> Beenden
         </button>
 
@@ -916,25 +897,13 @@ function PerformView({
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-          <button style={styles.performBtn} onClick={() => setFontSize((s) => Math.max(20, s - 4))}>
-            A−
-          </button>
+          <button className="perform-btn" style={styles.performBtn} onClick={() => setFontSize((s) => Math.max(20, s - 4))}>A−</button>
           <span style={{ color: "#9ca3af", fontSize: 13 }}>{fontSize}px</span>
-          <button style={styles.performBtn} onClick={() => setFontSize((s) => Math.min(80, s + 4))}>
-            A+
-          </button>
-          <button
-            style={styles.performBtn}
-            onClick={() => setIsLightMode((m) => !m)}
-            title="Dark/Light (D)"
-          >
+          <button className="perform-btn" style={styles.performBtn} onClick={() => setFontSize((s) => Math.min(80, s + 4))}>A+</button>
+          <button className="perform-btn" style={styles.performBtn} onClick={() => setIsLightMode((m) => !m)} title="Dark/Light">
             <Icon d={isLightMode ? icons.moon : icons.sun} size={18} />
           </button>
-          <button
-            style={styles.performBtn}
-            onClick={toggleFullscreen}
-            title="Vollbild (F)"
-          >
+          <button className="perform-btn" style={styles.performBtn} onClick={toggleFullscreen} title="Vollbild (F)">
             <Icon d={isFullscreen ? icons.minimize : icons.maximize} size={18} />
           </button>
         </div>
@@ -951,45 +920,24 @@ function PerformView({
         }}
       >
         {onPrev && (
-          <button style={styles.performBtn} onClick={onPrev} title="Vorheriger Song (←)">
+          <button className="perform-btn" style={styles.performBtn} onClick={onPrev} title="Vorheriger Song">
             <Icon d={icons.skipBack} size={22} />
           </button>
         )}
-
-        <button
-          style={styles.performBtn}
-          onClick={skipBackward}
-          title="Zurückspringen (Bild↑)"
-        >
+        <button className="perform-btn" style={styles.performBtn} onClick={skipBackward} title="Zurückspringen">
           <Icon d={icons.rewind} size={20} />
         </button>
-
-        <button
-          style={styles.performBtn}
-          onClick={() => {
-            setScrolling(false);
-            if (containerRef.current) containerRef.current.scrollTop = 0;
-            if (progressFillRef.current) progressFillRef.current.style.height = "0%";
-          }}
-          title="Stop & Reset"
-        >
+        <button className="perform-btn" style={styles.performBtn}
+          onClick={() => { setScrolling(false); if (containerRef.current) containerRef.current.scrollTop = 0; if (progressFillRef.current) progressFillRef.current.style.height = "0%"; }}
+          title="Stop & Reset">
           <Icon d={icons.stop} size={22} />
         </button>
-
-        {/* Main play/pause button */}
-        <button
-          style={styles.performPlayBtn}
-          onClick={() => {
-            if (countdown !== null) setCountdown(null);
-            else if (scrolling) setScrolling(false);
-            else startPlay();
-          }}
-          title="Play / Pause (LEERTASTE)"
-        >
+        <button className="perform-play-btn" style={styles.performPlayBtn}
+          onClick={() => { if (countdown !== null) setCountdown(null); else if (scrolling) setScrolling(false); else startPlay(); }}
+          title="Play / Pause (LEERTASTE)">
           {scrolling ? (
             <svg width={28} height={28} viewBox="0 0 24 24" fill="#111" stroke="none">
-              <rect x="6" y="4" width="4" height="16" />
-              <rect x="14" y="4" width="4" height="16" />
+              <rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" />
             </svg>
           ) : (
             <svg width={28} height={28} viewBox="0 0 24 24" fill="#111" stroke="none">
@@ -997,27 +945,20 @@ function PerformView({
             </svg>
           )}
         </button>
-
-        <button
-          style={styles.performBtn}
-          onClick={skipForward}
-          title="Vorwärtsspringen (Bild↓)"
-        >
+        <button className="perform-btn" style={styles.performBtn} onClick={skipForward} title="Vorwärtsspringen">
           <Icon d={icons.fastFwd} size={20} />
         </button>
-
         <div style={styles.speedControl}>
-          <button style={styles.performBtn} onClick={() => setSpeed((s) => Math.max(0, s - 1))}>
+          <button className="perform-btn" style={styles.performBtn} onClick={() => setSpeed((s) => Math.max(0, s - 1))}>
             <Icon d={icons.down} size={18} />
           </button>
           <span style={styles.speedLabel}>{speed}</span>
-          <button style={styles.performBtn} onClick={() => setSpeed((s) => Math.min(20, s + 1))}>
+          <button className="perform-btn" style={styles.performBtn} onClick={() => setSpeed((s) => Math.min(20, s + 1))}>
             <Icon d={icons.up} size={18} />
           </button>
         </div>
-
         {onNext && (
-          <button style={styles.performBtn} onClick={onNext} title="Nächster Song (→)">
+          <button className="perform-btn" style={styles.performBtn} onClick={onNext} title="Nächster Song">
             <Icon d={icons.skipFwd} size={22} />
           </button>
         )}
@@ -1047,7 +988,7 @@ const styles = {
     minHeight: "100vh",
     background: "linear-gradient(170deg, #0f0f0f 0%, #1a1a2e 50%, #0f0f0f 100%)",
     color: "#e5e5e5",
-    fontFamily: "'JetBrains Mono', 'SF Mono', 'Fira Code', monospace",
+    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
   },
   header: {
     display: "flex",
